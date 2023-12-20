@@ -196,7 +196,12 @@ while (my $repo = shift) { # 'library/hylang', 'tianon/perl', etc
 		my $logoUrlBase = $dockerHub . '/api/media/repos_logo/v1/' . url_escape($repo);
 		if (-f $repoLogo120) {
 			my $proposedLogo = Mojo::File->new($repoLogo120)->slurp;
-			my $currentLogo = $ua->get($logoUrlBase, { 'Cache-Control' => 'no-cache' });
+			
+			my $logoJson = $ua->get($logoUrlBase, { 'Cache-Control' => 'no-cache' });
+			# TODO better handling of errors (perhaps need to accept failure if logo doesn't exist yet?)
+			die 'GET to ' . $logoUrlBase . ' failed: ' . $logoJson->res->text unless $logoJson->res->is_success;
+			my $currentLogoUrl = $logoJson->res->json->{url};
+			my $currentLogo = $ua->get($currentLogoUrl, { 'Cache-Control' => 'no-cache' });
 			$currentLogo = ($currentLogo->res->is_success ? $currentLogo->res->body : undef);
 			
 			if ($currentLogo && $currentLogo eq $proposedLogo) {
